@@ -1,0 +1,73 @@
+using System;
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class NewMonoBehaviourScript : MonoBehaviour
+{
+    PlayerControl controls;
+    Vector2 move;
+    [SerializeField] private float moveSpeed = 2f;
+    [SerializeField] private float jumpHeight = 2f;
+    private Rigidbody rb;
+    public bool isGrounded;
+    private Animator animator;
+    private bool isrunning = false;
+
+    void Start() {
+      
+            rb = GetComponent<Rigidbody>();
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
+    }
+
+    void Awake()
+    {
+        controls = new PlayerControl();
+        controls.Gameplay.Jump.performed += ctx => Jump();
+        isGrounded = false;
+
+    }
+
+    void OnCollisionStay(Collision collision) { isGrounded = true; }
+
+    void OnCollisionExit(Collision collision) { isGrounded = false; }
+
+    void Jump()
+    {
+        if (!isGrounded) return;
+
+        float jumpForce = Mathf.Sqrt(jumpHeight * -2f * Physics.gravity.y);
+        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        isGrounded = false;
+
+    }
+
+    void Running()
+    {
+        isrunning = true;
+        moveSpeed = 6f;
+    }
+
+    void IsntRunning()
+    {
+        isrunning = false;
+        moveSpeed = 2f;
+    }
+
+    void OnEnable() { controls.Gameplay.Enable(); }
+    void OnDisable() { controls.Gameplay.Disable(); }
+
+    void Update()
+    {
+        move = controls.Gameplay.Move.ReadValue<Vector2>();
+        Vector3 movement = new Vector3(move.x, 0f, move.y);
+
+        if (controls.Gameplay.Running.IsPressed()) Running();
+        else IsntRunning();
+
+        transform.Translate(movement * moveSpeed * Time.deltaTime, Space.World);
+        float currentSpeed = move.magnitude * moveSpeed;
+        animator.SetFloat("Speed", currentSpeed);
+    }
+}
